@@ -1,0 +1,8 @@
+{
+  "$schema": "anna-app-identity/v1",
+  "host": "https://anna.partners",
+  "app_id": 420,
+  "slug": "nightcall-oncall-fixer",
+  "handle": "alanone",
+  "first_published_at": "2026-10-04T09:49:49.914Z"
+}

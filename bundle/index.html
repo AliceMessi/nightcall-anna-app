@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nightcall</title>
+<style>
+:root{color-scheme:dark}
+body{font-family:system-ui,sans-serif;margin:0;padding:20px;background:#0b0d12;color:#e8ecf3;max-width:900px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+header img{width:40px;height:40px;border-radius:10px}
+h1{font-size:19px;margin:0}
+p.sub{margin:2px 0 14px;color:#9aa4c0;font-size:13px}
+.card{background:#141927;border:1px solid #2a3350;border-radius:12px;padding:14px;margin-top:12px}
+label{font-size:12px;color:#9aa4c0;display:block;margin-bottom:6px}
+textarea{width:100%;box-sizing:border-box;min-height:110px;background:#0b0f1c;color:#e8ecf3;border:1px solid #2a3350;border-radius:8px;padding:10px;font-family:ui-monospace,monospace;font-size:12px}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{background:#7c5cff;color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600}
+button.secondary{background:#232b45}
+button:disabled{opacity:.5;cursor:default}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.kv{background:#0b0f1c;border:1px solid #2a3350;border-radius:8px;padding:10px;font-size:13px}
+.kv b{display:block;font-size:11px;color:#9aa4c0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+pre{background:#0b0f1c;border:1px solid #2a3350;border-radius:8px;padding:10px;white-space:pre-wrap;margin-top:12px;font-size:12px;max-height:220px;overflow:auto}
+footer{margin-top:14px;font-size:12px;color:#9aa4c0}
+</style>
+</head>
+<body>
+<header>
+<img src="logo.svg" alt="Nightcall logo" onerror="this.style.display='none'" />
+<div>
+<h1>Nightcall — alert to patch</h1>
+<p class="sub">Paste a production alert, reproduce the bug, get a root cause and a verified patch.</p>
+</div>
+</header>
+<div class="card">
+<label for="alert">1 · Paste alert JSON</label>
+<textarea id="alert">{"title":"escape-string-regexp fails on unescaped slash","stack":"TypeError"}</textarea>
+<div class="row">
+<button id="run">Reproduce + diagnose</button>
+<button id="fill-regex" class="secondary" type="button">Regex example</button>
+<button id="fill-generic" class="secondary" type="button">Checkout example</button>
+</div>
+</div>
+<div class="card" id="result" hidden>
+<label>2 · Diagnosis</label>
+<div class="grid">
+<div class="kv"><b>Title</b><span id="res-title">-</span></div>
+<div class="kv"><b>Reproduction</b><span id="res-repro">-</span></div>
+</div>
+<div class="kv" style="margin-top:10px"><b>Root cause</b><span id="res-cause">-</span></div>
+<div class="kv" style="margin-top:10px"><b>Patch</b><span id="res-patch">-</span></div>
+<div class="kv" style="margin-top:10px"><b>Verify</b><span id="res-verify">-</span></div>
+<div class="kv" style="margin-top:10px"><b>Next</b><span id="res-next">-</span></div>
+</div>
+<div class="card">
+<label>3 · Raw result</label>
+<pre id="out">Ready.</pre>
+</div>
+<footer>Nightcall runs fully bundled — no API keys. Last run is saved via Anna Storage.</footer>
+<script src="anna-tool-ids.js" defer></script>
+<script src="app.js" type="module"></script>
+</body>
+</html>

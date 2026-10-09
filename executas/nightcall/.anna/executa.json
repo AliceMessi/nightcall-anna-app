@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1180,
+  "tool_id": "tool-alanone-nightcall-triage-wx9u6zjt",
+  "slug": "nightcall-triage",
+  "executa_type": "tool",
+  "first_published_at": "2026-10-04T09:50:34.759Z"
+}
