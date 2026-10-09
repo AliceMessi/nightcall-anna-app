@@ -1,0 +1,11 @@
+{
+  "$schema": "anna-executas-lock/v1",
+  "host": "https://anna.partners",
+  "executas": {
+    "nightcall-triage": {
+      "tool_id": "tool-alanone-nightcall-triage-wx9u6zjt",
+      "path": "./executas/nightcall",
+      "source": "working"
+    }
+  }
+}

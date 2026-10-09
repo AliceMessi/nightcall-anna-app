@@ -1,0 +1,21 @@
+{
+  "name": "nightcall",
+  "display_name": "Nightcall",
+  "version": "0.2.0",
+  "description": "Reproduce a production alert and propose a verified patch.",
+  "author": "alfredoantonio.decandia@gmail.com",
+  "tools": [
+    {
+      "name": "triage_alert",
+      "description": "Reproduce alert heuristically and return root cause plus patch.",
+      "parameters": [
+        {
+          "name": "alert",
+          "type": "string",
+          "description": "Alert JSON or free text",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

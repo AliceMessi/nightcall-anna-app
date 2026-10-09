@@ -5,7 +5,7 @@ const readline = require("readline");
 const MANIFEST = {
   name: "nightcall",
   display_name: "Nightcall",
-  version: "0.1.0",
+  version: "0.2.0",
   description: "Reproduce a production alert and propose a verified patch.",
   author: "alfredoantonio.decandia@gmail.com",
   tools: [
