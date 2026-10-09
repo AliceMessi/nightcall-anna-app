@@ -40,12 +40,19 @@ Screenshot REALI del bundle (1000×700, stesso default_size del manifest):
 - `assets-store/screenshots/02-diagnosis.png` — diagnosis cards
 - `assets-store/screenshots/03-evidence.png` — raw result / evidence
 
-## Checklist resubmit (mail Anna)
-- [x] Logo distintivo (non placeholder)
-- [x] Screenshot reali del main flow (3)
-- [x] About dettagliata (cosa fa / features / per chi / started)
-- [x] Bundled tool `nightcall-triage` con 4 binari (vedi sotto)
-- [ ] Full test su Cloud Agent da fresh install → main flow (richiede login + publish)
+## Checklist resubmit (mail Anna) — stato 09/10/2026
+- [x] Logo distintivo (file pronti in assets-store/ — CARICARE in Console > Listing > Upload logo)
+- [x] Screenshot reali del main flow (3 in assets-store/screenshots/ — CARICARE in Console > Listing)
+- [x] About dettagliata (sincronizzata via `apps sync-meta` il 09/10/2026)
+- [x] Bundled tool `nightcall-triage` con 4 binari (su CDN Anna, sha256 pinned, v0.2.0 frozen id=672)
+- [x] App v0.2.0 tagliata (id=1181) e sottomessa in review (status: pending_review)
+- [x] Full test su Cloud Agent (09/10/2026, via browser automation su account AlanOne):
+  Cloud Agent #3111 (890d46a63239e8, iad, online) → Install "Nightcall Triage" v0.2.0
+  → `✓ Installed v0.2.0 on 890d46a63239e8` (niente already_satisfied, niente agent-unreachable).
+  Chat → `tool_alanone_nightcall_triage_wx9u6zjt__triage_alert` ✅ Done con Triage Results
+  completi (reproduced/root cause/patch/red-green/next). Screenshot: anna-triage.png.
+  Nota: l'apertura window via #mention dice "not installed" pre-publish (normale:
+  i reviewer usano il review-candidate pinnato v0.2.0 che risolve alla versione giusta).
 
 ## Fix tecnici applicati (cap. 6-7 Build on Anna 101)
 - `app.json`: aggiunto `bundled_executas: {nightcall-triage: ./executas/nightcall}`, description estesa, version 0.2.0
