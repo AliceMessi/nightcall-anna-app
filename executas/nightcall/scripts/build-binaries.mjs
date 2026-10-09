@@ -7,6 +7,7 @@
 //   archive root: <entrypoint binary> + manifest.json
 //   manifest.json pins name/version + runtime.binary.entrypoint
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
@@ -57,8 +58,5 @@ execSync(
   { cwd: root, shell: isWin ? "powershell.exe" : "/bin/sh", stdio: "inherit" }
 );
 console.log(`packed dist/${archive}`);
-execSync(isWin ? `Get-FileHash dist/${archive} -Algorithm SHA256` : `shasum -a 256 dist/${archive}`, {
-  cwd: root,
-  shell: isWin ? "powershell.exe" : "/bin/sh",
-  stdio: "inherit"
-});
+const sha256 = createHash("sha256").update(readFileSync(join(root, "dist", archive))).digest("hex");
+console.log(`sha256 ${sha256}  dist/${archive}`);

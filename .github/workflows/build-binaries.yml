@@ -8,12 +8,13 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
             platform: darwin-arm64
             pkg-target: node20-macos-arm64
-          - os: macos-13
+          - os: macos-latest
             platform: darwin-x86_64
             pkg-target: node20-macos-x64
           - os: ubuntu-latest
