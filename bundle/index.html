@@ -21,6 +21,7 @@ button:disabled{opacity:.5;cursor:default}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .kv{background:#0b0f1c;border:1px solid #2a3350;border-radius:8px;padding:10px;font-size:13px}
 .kv b{display:block;font-size:11px;color:#9aa4c0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.warn{background:#2a1f0d;border:1px solid #8a6d1c;border-radius:8px;padding:10px;font-size:12px;margin-top:10px;color:#f0d48a}
 pre{background:#0b0f1c;border:1px solid #2a3350;border-radius:8px;padding:10px;white-space:pre-wrap;margin-top:12px;font-size:12px;max-height:220px;overflow:auto}
 footer{margin-top:14px;font-size:12px;color:#9aa4c0}
 </style>
@@ -30,34 +31,36 @@ footer{margin-top:14px;font-size:12px;color:#9aa4c0}
 <img src="logo.svg" alt="Nightcall logo" onerror="this.style.display='none'" />
 <div>
 <h1>Nightcall — alert to patch</h1>
-<p class="sub">Paste a production alert, reproduce the bug, get a root cause and a verified patch.</p>
+<p class="sub">Paste a production alert. Anna's LLM analyzes its actual content; nothing is executed.</p>
 </div>
 </header>
 <div class="card">
-<label for="alert">1 · Paste alert JSON</label>
-<textarea id="alert">{"title":"escape-string-regexp fails on unescaped slash","stack":"TypeError"}</textarea>
+<label for="alert">1 · Paste alert JSON (with stack trace)</label>
+<textarea id="alert">{"title":"TypeError: Cannot read properties of undefined (reading 'id')","service":"checkout-api","stack":"at getUser (src/user.js:42:18)
+ at handler (src/checkout.js:17:5)"}</textarea>
 <div class="row">
-<button id="run">Reproduce + diagnose</button>
+<button id="run">Analyze with Anna LLM</button>
 <button id="fill-regex" class="secondary" type="button">Regex example</button>
 <button id="fill-generic" class="secondary" type="button">Checkout example</button>
 </div>
 </div>
 <div class="card" id="result" hidden>
-<label>2 · Diagnosis</label>
+<label>2 · AI analysis</label>
 <div class="grid">
 <div class="kv"><b>Title</b><span id="res-title">-</span></div>
-<div class="kv"><b>Reproduction</b><span id="res-repro">-</span></div>
+<div class="kv"><b>Source</b><span id="res-source">-</span></div>
 </div>
+<div class="kv" style="margin-top:10px"><b>Confidence</b><span id="res-conf">-</span></div>
 <div class="kv" style="margin-top:10px"><b>Root cause</b><span id="res-cause">-</span></div>
 <div class="kv" style="margin-top:10px"><b>Patch</b><span id="res-patch">-</span></div>
-<div class="kv" style="margin-top:10px"><b>Verify</b><span id="res-verify">-</span></div>
-<div class="kv" style="margin-top:10px"><b>Next</b><span id="res-next">-</span></div>
+<div class="kv" style="margin-top:10px"><b>Evidence used</b><span id="res-evidence">-</span></div>
+<div class="warn" id="res-honesty">Not reproduced, not verified — inference from the alert text only.</div>
 </div>
 <div class="card">
 <label>3 · Raw result</label>
 <pre id="out">Ready.</pre>
 </div>
-<footer>Nightcall runs fully bundled — no API keys. Last run is saved via Anna Storage.</footer>
+<footer>Nightcall runs fully bundled — no API keys, billed on your Anna plan. Last run is saved via Anna Storage.</footer>
 <script src="anna-tool-ids.js" defer></script>
 <script src="app.js" type="module"></script>
 </body>

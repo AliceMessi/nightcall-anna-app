@@ -33,11 +33,14 @@ function renderResult(result) {
     return;
   }
   $("res-title").textContent = data.title || "untitled alert";
-  $("res-repro").textContent = data.reproduced ? "reproduced" : "not reproduced";
+  const src = data.analysis_source === "anna-llm" ? "Anna LLM" : "local heuristic";
+  $("res-source").textContent = src + (data.model ? " (" + data.model + ")" : "");
+  $("res-conf").textContent = data.confidence || "low";
   $("res-cause").textContent = data.root_cause || "-";
   $("res-patch").textContent = data.patch || "-";
-  $("res-verify").textContent = data.verify || "-";
-  $("res-next").textContent = data.next || "-";
+  $("res-evidence").textContent = (data.evidence_used || []).join("; ") || "-";
+  $("res-honesty").textContent =
+    "Not reproduced, not verified — inference from the alert text only. Validate in your own repo before applying.";
   $("result").hidden = false;
   $("out").textContent = JSON.stringify(result, null, 2);
 }
@@ -45,7 +48,7 @@ function renderResult(result) {
 async function run() {
   const out = $("out");
   const btn = $("run");
-  out.textContent = "Running...";
+  out.textContent = "Analyzing with Anna's LLM...";
   btn.disabled = true;
   try {
     const anna = await annaReady;
@@ -82,7 +85,11 @@ $("fill-regex").addEventListener("click", () => {
 });
 $("fill-generic").addEventListener("click", () => {
   $("alert").value = JSON.stringify(
-    { title: "TypeError in checkout", stack: "Cannot read properties of undefined" },
+    {
+      title: "TypeError: Cannot read properties of undefined (reading 'id')",
+      service: "checkout-api",
+      stack: "at getUser (src/user.js:42:18)\n at handler (src/checkout.js:17:5)"
+    },
     null,
     2
   );

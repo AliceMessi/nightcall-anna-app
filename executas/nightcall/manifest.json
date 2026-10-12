@@ -1,18 +1,19 @@
 {
   "name": "nightcall",
   "display_name": "Nightcall",
-  "version": "0.2.0",
-  "description": "Reproduce a production alert and propose a verified patch.",
+  "version": "0.3.0",
+  "description": "Analyze a production alert with Anna's LLM and propose a patch. No code is executed; analysis is inference from the alert text.",
   "author": "alfredoantonio.decandia@gmail.com",
+  "host_capabilities": ["llm.sample"],
   "tools": [
     {
       "name": "triage_alert",
-      "description": "Reproduce alert heuristically and return root cause plus patch.",
+      "description": "Analyze a production alert via Anna's LLM; returns root cause, patch, confidence and the evidence used. Inference only — nothing is run.",
       "parameters": [
         {
           "name": "alert",
           "type": "string",
-          "description": "Alert JSON or free text",
+          "description": "Alert JSON or free text (title, service, stack trace)",
           "required": true
         }
       ]
