@@ -40,19 +40,20 @@ Screenshot REALI del bundle (1000×700, stesso default_size del manifest):
 - `assets-store/screenshots/02-diagnosis.png` — diagnosis cards
 - `assets-store/screenshots/03-evidence.png` — raw result / evidence
 
-## Checklist resubmit (mail Anna) — stato 09/10/2026
-- [x] Logo distintivo (file pronti in assets-store/ — CARICARE in Console > Listing > Upload logo)
-- [x] Screenshot reali del main flow (3 in assets-store/screenshots/ — CARICARE in Console > Listing)
-- [x] About dettagliata (sincronizzata via `apps sync-meta` il 09/10/2026)
-- [x] Bundled tool `nightcall-triage` con 4 binari (su CDN Anna, sha256 pinned, v0.2.0 frozen id=672)
-- [x] App v0.2.0 tagliata (id=1181) e sottomessa in review (status: pending_review)
-- [x] Full test su Cloud Agent (09/10/2026, via browser automation su account AlanOne):
-  Cloud Agent #3111 (890d46a63239e8, iad, online) → Install "Nightcall Triage" v0.2.0
-  → `✓ Installed v0.2.0 on 890d46a63239e8` (niente already_satisfied, niente agent-unreachable).
-  Chat → `tool_alanone_nightcall_triage_wx9u6zjt__triage_alert` ✅ Done con Triage Results
-  completi (reproduced/root cause/patch/red-green/next). Screenshot: anna-triage.png.
-  Nota: l'apertura window via #mention dice "not installed" pre-publish (normale:
-  i reviewer usano il review-candidate pinnato v0.2.0 che risolve alla versione giusta).
+## Checklist resubmit round 2 (mail Anna 12/10/2026) — stato
+- [x] Real AI: plugin riscritto — initialize v2 + `sampling/createMessage` (llm.sample),
+  prompt con contenuto reale dell'alert, risposta JSON strutturata (json_schema → json_object fallback)
+- [x] Niente più claim falsi: `reproduced:false`, `verified:false`, `analysis_basis` esplicito,
+  tagline senza "verified", UI con banner onesto + confidence + evidence_used
+- [x] Tool fa lavoro reale: parsing deterministico (error type, frame, field, service) + chiamata LLM;
+  perché bundled: serve l'ambiente executa con grant sampling (niente chiavi, billing su piano utente)
+- [x] Test Cloud Agent #3111 con 3 alert DIVERSI (12/10/2026, v0.3.0 via Install v0.3.0):
+  checkout TypeError (getUser src/user.js:42, 'id') → anna-llm, high;
+  payments KeyError 'currency' (worker.py:52) → anna-llm, high;
+  img-resize OOMKilled 512Mi (12000x9000 JPEG) → anna-llm, high.
+  Ognuno cita dettagli propri dell'alert. Screenshot: anna-v3-mail/py/oom.png.
+- [x] Nota per i reviewer: sampling richiede grant per-user
+  (Installed Apps → Nightcall → Permissions → Sampling ON), altrimenti fallback onesto.
 
 ## Fix tecnici applicati (cap. 6-7 Build on Anna 101)
 - `app.json`: aggiunto `bundled_executas: {nightcall-triage: ./executas/nightcall}`, description estesa, version 0.2.0
