@@ -7,41 +7,37 @@ const path = require("path");
   require("fs").mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
-  page.on("console", (m) => console.log("[console]", m.type(), m.text().slice(0, 120)));
   await page.goto("file:///" + bundle.replace(/\\/g, "/"));
 
-  // 1 - empty / ready state
+  // 1 - empty / ready state (mail's alert prefilled by default)
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(outDir, "01-alert-input.png") });
 
-  // 2 - filled diagnosis (real plugin output shape, rendered by our bundle code)
+  // 2 - AI analysis rendered by our bundle code (honest fields)
   await page.evaluate(() => {
-    document.getElementById("alert").value = JSON.stringify(
-      { title: "escape-string-regexp fails on unescaped slash", stack: "TypeError" },
-      null,
-      2
-    );
     document.getElementById("res-title").textContent =
-      "escape-string-regexp fails on unescaped slash";
-    document.getElementById("res-repro").textContent = "reproduced";
+      "TypeError: Cannot read properties of undefined (reading 'id')";
+    document.getElementById("res-source").textContent = "Anna LLM";
+    document.getElementById("res-conf").textContent = "medium";
     document.getElementById("res-cause").textContent =
-      "Unescaped special chars reach RegExp constructor; '/' and similar tokens are not escaped.";
+      "getUser in src/user.js:42 reads id from an undefined user object; the caller handler in src/checkout.js:17 passes no user.";
     document.getElementById("res-patch").textContent =
-      "Escape input with escape-string-regexp before new RegExp(input).";
-    document.getElementById("res-verify").textContent =
-      "red-green: failing fixture passes after patch";
-    document.getElementById("res-next").textContent =
-      "Paste the diff into your repo, run npm test, open a PR.";
+      "Guard in getUser: if (!user) throw new Error('missing user'); use user?.id at the read site.";
+    document.getElementById("res-evidence").textContent =
+      "getUser (src/user.js:42); handler (src/checkout.js:17); accessed field: 'id'; service: checkout-api";
+    document.getElementById("res-honesty").textContent =
+      "Not reproduced, not verified — inference from the alert text only. Validate in your own repo before applying.";
     document.getElementById("result").hidden = false;
     document.getElementById("out").textContent = JSON.stringify(
       {
         success: true,
         data: {
-          title: "escape-string-regexp fails on unescaped slash",
-          reproduced: true,
-          root_cause: "Unescaped special chars reach RegExp constructor.",
-          patch: "Escape input with escape-string-regexp before new RegExp(input).",
-          verify: "red-green: failing fixture passes after patch"
+          title: "TypeError: Cannot read properties of undefined (reading 'id')",
+          confidence: "medium",
+          evidence_used: ["getUser (src/user.js:42)", "accessed field: 'id'"],
+          analysis_source: "anna-llm",
+          reproduced: false,
+          verified: false
         }
       },
       null,
