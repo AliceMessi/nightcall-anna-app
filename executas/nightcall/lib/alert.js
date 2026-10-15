@@ -19,7 +19,8 @@ function jsonField(text, names) {
   return null;
 }
 
-const FRAME_RE = /^\s*at (?:(?:async )?([^\s(]+) \()?((?:[A-Za-z]:)?[^():\s]+):(\d+):(\d+)\)?\s*$/;
+// "at fn (file:1:2)", "at async fn (file:1:2)", "at Obj.fn [as alias] (node:net:1:2)", "at file:1:2"
+const FRAME_RE = /^\s*at (?:(?:async )?([^\s(]+)(?: \[as [^\]]+\])? \()?((?:[A-Za-z]:|node:|file:\/\/)?[^():\s]+):(\d+):(\d+)\)?\s*$/;
 
 function parseFrames(stack) {
   const frames = [];

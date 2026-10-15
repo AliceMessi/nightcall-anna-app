@@ -9,7 +9,7 @@ const readline = require("readline");
 const crypto = require("crypto");
 const { triage } = require("./lib/triage");
 
-const VERSION = "0.4.0";
+const VERSION = "0.4.1";
 
 const MANIFEST = {
   name: "nightcall",

@@ -122,6 +122,18 @@ test("Test A + code: escapes the call site and the generated test goes green", a
   assert.equal(highlight("a/b( found", "a/b("), "<mark>a/b(</mark> found");
 });
 
+test("stack frames with aliases and node: paths are parsed (and marked as library)", () => {
+  const { parseFrames } = require("../lib/alert");
+  const frames = parseFrames(
+    "Error: x\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1606:16)\n    at async run (/app/src/jobs/pay.js:12:7)\n    at /app/src/index.js:3:1",
+  );
+  assert.deepEqual(frames.map((f) => [f.function, f.file, f.line, f.library]), [
+    ["TCPConnectWrap.afterConnect", "node:net", 1606, true],
+    ["run", "/app/src/jobs/pay.js", 12, false],
+    ["<anonymous>", "/app/src/index.js", 3, false],
+  ]);
+});
+
 test("regex scanner points at the right character", () => {
   assert.deepEqual(locateCulprit("a/b(", "Unterminated group").map((c) => c.index), [3]);
   assert.equal(locateCulprit("a)b", "Unmatched ')'")[0].char, ")");
@@ -181,7 +193,7 @@ test("protocol: describe, invoke with a sampling round trip, and errors", async 
     return lines.find((l) => l.id === obj.id);
   };
   const d = await call({ jsonrpc: "2.0", id: 1, method: "describe" });
-  assert.equal(d.result.version, "0.4.0");
+  assert.equal(d.result.version, "0.4.1");
   const a = await call({ jsonrpc: "2.0", id: 2, method: "invoke", params: { tool: "triage_alert", arguments: { alert: ALERT_A }, context: { invoke_id: "x" } } });
   assert.equal(a.result.data.analyzer, "regex-syntax");
   const g = await call({ jsonrpc: "2.0", id: 3, method: "invoke", params: { tool: "triage_alert", arguments: { alert: "Error: disk full" }, context: { invoke_id: "y" } } });

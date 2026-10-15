@@ -1,7 +1,7 @@
 {
   "name": "nightcall",
   "display_name": "Nightcall",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Triage a production alert: reproduce what can be reproduced, trace the bad value to its origin, and return a unified diff plus a regression test when code is attached. User code is never executed.",
   "author": "alfredoantonio.decandia@gmail.com",
   "host_capabilities": [
