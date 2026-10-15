@@ -33,6 +33,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install --no-audit --no-fund
+      - run: node --test test/
       - run: npx @yao-pkg/pkg plugin.js --targets ${{ matrix.pkg-target }} --output dist/nightcall-triage${{ startsWith(matrix.platform, 'windows') && '.exe' || '' }}
       - run: node scripts/build-binaries.mjs ${{ matrix.platform }}
       - uses: actions/upload-artifact@v4
