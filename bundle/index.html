@@ -5,62 +5,112 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Nightcall</title>
 <style>
-:root{color-scheme:dark}
-body{font-family:system-ui,sans-serif;margin:0;padding:20px;background:#0b0d12;color:#e8ecf3;max-width:900px}
-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+:root{color-scheme:dark;--bg:#0b0d12;--card:#141927;--line:#2a3350;--field:#0b0f1c;--muted:#9aa4c0;--text:#e8ecf3;--accent:#7c5cff;--ok:#3ecf8e;--bad:#ff6b6b;--warn:#f0d48a}
+body{font-family:system-ui,sans-serif;margin:0;padding:18px;background:var(--bg);color:var(--text);max-width:960px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 header img{width:40px;height:40px;border-radius:10px}
 h1{font-size:19px;margin:0}
-p.sub{margin:2px 0 14px;color:#9aa4c0;font-size:13px}
-.card{background:#141927;border:1px solid #2a3350;border-radius:12px;padding:14px;margin-top:12px}
-label{font-size:12px;color:#9aa4c0;display:block;margin-bottom:6px}
-textarea{width:100%;box-sizing:border-box;min-height:110px;background:#0b0f1c;color:#e8ecf3;border:1px solid #2a3350;border-radius:8px;padding:10px;font-family:ui-monospace,monospace;font-size:12px}
-.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-button{background:#7c5cff;color:#fff;border:0;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600}
+p.sub{margin:2px 0 8px;color:var(--muted);font-size:13px;line-height:1.45}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px}
+label,.label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+textarea,input{width:100%;box-sizing:border-box;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px;font-family:ui-monospace,monospace;font-size:12px}
+textarea{min-height:96px}
+#code{min-height:120px}
+.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 13px;cursor:pointer;font-weight:600;font-size:13px}
 button.secondary{background:#232b45}
+button.small{padding:5px 9px;font-size:12px}
 button:disabled{opacity:.5;cursor:default}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.kv{background:#0b0f1c;border:1px solid #2a3350;border-radius:8px;padding:10px;font-size:13px}
-.kv b{display:block;font-size:11px;color:#9aa4c0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
-.warn{background:#2a1f0d;border:1px solid #8a6d1c;border-radius:8px;padding:10px;font-size:12px;margin-top:10px;color:#f0d48a}
-pre{background:#0b0f1c;border:1px solid #2a3350;border-radius:8px;padding:10px;white-space:pre-wrap;margin-top:12px;font-size:12px;max-height:220px;overflow:auto}
-footer{margin-top:14px;font-size:12px;color:#9aa4c0}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.badge{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted)}
+.badge.low{color:var(--bad);border-color:#5a2a33}.badge.medium{color:var(--warn);border-color:#5a4a1c}.badge.high{color:var(--ok);border-color:#1f5a40}
+h3{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+.cause{font-size:14px;line-height:1.5}
+.note{background:#2a1f0d;border:1px solid #8a6d1c;border-radius:8px;padding:9px;font-size:13px;color:var(--warn);margin-top:8px}
+ul,ol{margin:0;padding-left:20px;font-size:13px;line-height:1.5}
+li.pass::marker{content:"✓  ";color:var(--ok)}li.fail::marker{content:"✗  ";color:var(--bad)}li.skipped::marker{content:"○  ";color:var(--muted)}
+pre{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:10px;white-space:pre;margin:6px 0 0;font-size:12px;max-height:320px;overflow:auto}
+pre .add{color:var(--ok)}pre .del{color:var(--bad)}pre .hunk{color:#8fa7ff}
+.muted{color:var(--muted);font-size:12px}
+footer{margin-top:14px;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
 <header>
 <img src="logo.svg" alt="Nightcall logo" onerror="this.style.display='none'" />
 <div>
-<h1>Nightcall — alert to patch</h1>
-<p class="sub">Paste a production alert. Anna's LLM analyzes its actual content; nothing is executed.</p>
+<h1>Nightcall — from alert to an applicable patch</h1>
+<p class="sub">Known error classes are reproduced and traced by rules, so the same alert always gets the same answer. Attach the code named in the stack to get a unified diff and a regression test. Other errors are analyzed by Anna's LLM. Your code is never executed.</p>
 </div>
 </header>
+
 <div class="card">
-<label for="alert">1 · Paste alert JSON (with stack trace)</label>
-<textarea id="alert">{"title":"TypeError: Cannot read properties of undefined (reading 'id')","service":"checkout-api","stack":"at getUser (src/user.js:42:18)
- at handler (src/checkout.js:17:5)"}</textarea>
+<label for="alert">1 · Alert (JSON or text, ideally with the stack trace)</label>
+<textarea id="alert" spellcheck="false"></textarea>
 <div class="row">
-<button id="run">Analyze with Anna LLM</button>
-<button id="fill-regex" class="secondary" type="button">Regex example</button>
-<button id="fill-generic" class="secondary" type="button">Checkout example</button>
+<span class="muted">Samples:</span>
+<button id="fill-regex" class="secondary small" type="button">RegExp error</button>
+<button id="fill-checkout" class="secondary small" type="button">Checkout crash</button>
 </div>
 </div>
-<div class="card" id="result" hidden>
-<label>2 · AI analysis</label>
-<div class="grid">
-<div class="kv"><b>Title</b><span id="res-title">-</span></div>
-<div class="kv"><b>Source</b><span id="res-source">-</span></div>
-</div>
-<div class="kv" style="margin-top:10px"><b>Confidence</b><span id="res-conf">-</span></div>
-<div class="kv" style="margin-top:10px"><b>Root cause</b><span id="res-cause">-</span></div>
-<div class="kv" style="margin-top:10px"><b>Patch</b><span id="res-patch">-</span></div>
-<div class="kv" style="margin-top:10px"><b>Evidence used</b><span id="res-evidence">-</span></div>
-<div class="warn" id="res-honesty">Not reproduced, not verified — inference from the alert text only.</div>
-</div>
+
 <div class="card">
-<label>3 · Raw result</label>
-<pre id="out">Ready.</pre>
+<details id="code-box">
+<summary>2 · Code from the stack (optional — turns the plan into a diff)</summary>
+<p class="muted">Paste the files named in the stack, each starting with a line <code>// file: path/to/file.js</code>, or give a public GitHub repo and Nightcall fetches them.</p>
+<textarea id="code" spellcheck="false" placeholder="// file: src/user.js&#10;...&#10;// file: src/checkout.js&#10;..."></textarea>
+<div class="two">
+<input id="repo" placeholder="https://github.com/owner/repo (optional)" />
+<input id="ref" placeholder="branch / tag / commit (default HEAD)" />
 </div>
-<footer>Nightcall runs fully bundled — no API keys, billed on your Anna plan. Last run is saved via Anna Storage.</footer>
+<div class="row"><button id="fill-code" class="secondary small" type="button">Load sample code for the selected sample</button></div>
+</details>
+</div>
+
+<div class="row">
+<button id="run">Analyze</button>
+<span id="status" class="muted"></span>
+</div>
+
+<div class="card" id="result" hidden>
+<div class="badges" id="badges"></div>
+<div class="cause" id="res-cause"></div>
+<div class="note" id="res-title-check" hidden></div>
+<pre id="res-pointer" hidden></pre>
+
+<h3>Evidence</h3>
+<ul id="res-facts"></ul>
+
+<h3>Checks run by Nightcall</h3>
+<ul id="res-checks"></ul>
+
+<h3>Confidence</h3>
+<ul id="res-conf"></ul>
+
+<h3>Fix plan</h3>
+<ol id="res-plan"></ol>
+
+<h3>Patch <button id="copy-patch" class="secondary small" type="button">Copy</button></h3>
+<div class="muted" id="res-patch-note"></div>
+<pre id="res-patch"></pre>
+
+<div id="test-box" hidden>
+<h3>Regression test <button id="copy-test" class="secondary small" type="button">Copy</button></h3>
+<div class="muted" id="res-test-meta"></div>
+<pre id="res-test"></pre>
+</div>
+
+<div id="needs-box" hidden>
+<h3>For a better answer, add</h3>
+<ul id="res-needs"></ul>
+</div>
+<p class="muted" id="res-honesty"></p>
+</div>
+
+<details class="card"><summary>Raw result (JSON)</summary><pre id="out">Ready.</pre></details>
+<footer>Bundled tool, no API keys: LLM calls go through your Anna plan. Results are saved per input with Anna Storage.</footer>
 <script src="anna-tool-ids.js" defer></script>
 <script src="app.js" type="module"></script>
 </body>

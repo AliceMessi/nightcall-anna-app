@@ -1,20 +1,40 @@
 {
   "name": "nightcall",
   "display_name": "Nightcall",
-  "version": "0.3.0",
-  "description": "Analyze a production alert with Anna's LLM and propose a patch. No code is executed; analysis is inference from the alert text.",
+  "version": "0.4.0",
+  "description": "Triage a production alert: reproduce what can be reproduced, trace the bad value to its origin, and return a unified diff plus a regression test when code is attached. User code is never executed.",
   "author": "alfredoantonio.decandia@gmail.com",
-  "host_capabilities": ["llm.sample"],
+  "host_capabilities": [
+    "llm.sample"
+  ],
   "tools": [
     {
       "name": "triage_alert",
-      "description": "Analyze a production alert via Anna's LLM; returns root cause, patch, confidence and the evidence used. Inference only — nothing is run.",
+      "description": "Analyze a production alert. Returns root cause, title-vs-error check, calibrated confidence with reasons, fix plan, a unified diff when code is attached, a regression test, and what to attach for a better answer.",
       "parameters": [
         {
           "name": "alert",
           "type": "string",
-          "description": "Alert JSON or free text (title, service, stack trace)",
+          "description": "Alert JSON or free text (title, error, service, stack trace)",
           "required": true
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Optional: files from the stack, each starting with a line `// file: path/to/file.js`",
+          "required": false
+        },
+        {
+          "name": "repo",
+          "type": "string",
+          "description": "Optional: public GitHub repo URL to fetch the files named in the stack",
+          "required": false
+        },
+        {
+          "name": "ref",
+          "type": "string",
+          "description": "Optional: branch, tag or commit for repo (default HEAD)",
+          "required": false
         }
       ]
     }

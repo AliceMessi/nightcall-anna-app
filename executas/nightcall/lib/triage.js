@@ -1,0 +1,169 @@
+"use strict";
+// Orchestrates one triage: parse → attach code → deterministic analyzers →
+// Anna LLM only for alerts no analyzer covers → calibrated confidence.
+const { parseAlert } = require("./alert");
+const { parsePastedCode, fetchFromGitHub, findFile, syntaxCheck, unifiedDiff } = require("./code");
+const { analyzeRegex } = require("./regex");
+const { analyzeUndefinedRead } = require("./undefined-read");
+
+const RANK = { low: 0, medium: 1, high: 2 };
+const NAME = ["low", "medium", "high"];
+const lower = (...xs) => NAME[Math.min(...xs.map((x) => RANK[x] ?? 0))];
+
+async function collectCode(args, ev, fetchImpl) {
+  const files = parsePastedCode(args.code);
+  const notes = [];
+  if (args.repo) {
+    const wanted = ev.appFrames.map((f) => f.file.replace(/^.*?\/(src|lib|app|server|api)\//, "$1/"));
+    if (!wanted.length) notes.push("repo given, but the stack has no application frames to fetch");
+    else {
+      const { files: got, errors } = await fetchFromGitHub(args.repo, args.ref, wanted, fetchImpl);
+      for (const f of got) if (!findFile(files, f.path)) files.push(f);
+      notes.push(...errors.map((e) => "fetch " + e));
+    }
+  }
+  return { files, notes };
+}
+
+const GENERIC_PROMPT =
+  "You are an on-call engineer. Analyze THIS production alert. Reply with JSON only: " +
+  '{"root_cause": string, "fix_plan": string[], "confidence": "low"|"medium"|"high", "evidence_used": string[], ' +
+  '"edits": [{"path": string, "find": string, "replace": string}]}. Rules: ' +
+  "1) the error message outranks the title — if they disagree, say so; " +
+  "2) cite only details present in the alert or the attached code; " +
+  "3) never propose editing third-party code (node_modules, vendored libraries): fix the caller; " +
+  "4) never 'fix' by hiding the error (optional chaining, empty catch, default values) unless the value is legitimately optional; " +
+  "5) edits only when code is attached: `find` must be an exact substring of that file, `replace` its replacement; otherwise edits = []; " +
+  "6) confidence is low without a stack trace.";
+
+function applyEdits(files, edits) {
+  const changed = new Map();
+  const problems = [];
+  for (const e of Array.isArray(edits) ? edits.slice(0, 6) : []) {
+    if (!e || typeof e.find !== "string" || typeof e.replace !== "string" || !e.find) continue;
+    if (/node_modules\//.test(e.path || "")) {
+      problems.push(`refused an edit to ${e.path}: third-party code`);
+      continue;
+    }
+    const f = findFile(files, e.path);
+    if (!f) {
+      problems.push(`edit for ${e.path}: file not attached`);
+      continue;
+    }
+    const cur = changed.get(f.path) || f.content;
+    const at = cur.indexOf(e.find);
+    if (at < 0 || cur.indexOf(e.find, at + 1) >= 0) {
+      problems.push(`edit for ${f.path}: the text to replace was ${at < 0 ? "not found" : "found more than once"}`);
+      continue;
+    }
+    changed.set(f.path, cur.slice(0, at) + e.replace + cur.slice(at + e.find.length));
+  }
+  return { changed, problems };
+}
+
+async function analyzeGeneric(ev, files, sample) {
+  const facts = [];
+  if (ev.errorType) facts.push(`error type: ${ev.errorType}`);
+  if (ev.error) facts.push(`error message: ${ev.error.slice(0, 200)}`);
+  for (const f of ev.appFrames.slice(0, 4)) facts.push(`${f.function} at ${f.file}:${f.line}`);
+  if (!ev.frames.length) facts.push("no stack trace in the alert");
+  const checks = [];
+  let out = null;
+  let model = null;
+  if (sample) {
+    const codeText = files.map((f) => `// file: ${f.path}\n${f.content.slice(0, 12000)}`).join("\n\n");
+    try {
+      const res = await sample(
+        GENERIC_PROMPT + "\n\nAlert:\n" + ev.text + (codeText ? "\n\nAttached code:\n" + codeText : "\n\n(no code attached)"),
+      );
+      model = res.model;
+      const raw = String(res.text || "");
+      const obj = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+      if (obj && typeof obj.root_cause === "string") out = obj;
+    } catch (e) {
+      checks.push({ name: "Anna LLM", status: "skipped", detail: "no usable answer: " + (e && e.message ? e.message : e) });
+    }
+  }
+  let patch = { kind: "none", note: files.length ? "No safe edit could be produced for the attached code." : "No code attached." };
+  if (out && files.length && Array.isArray(out.edits) && out.edits.length) {
+    const { changed, problems } = applyEdits(files, out.edits);
+    for (const p of problems) checks.push({ name: "Edit rejected", status: "fail", detail: p });
+    if (changed.size) {
+      let diff = "";
+      for (const [path, after] of changed) {
+        const before = findFile(files, path).content;
+        diff += unifiedDiff(path, before, after);
+        const s = syntaxCheck(after, path);
+        checks.push({ name: `Patched ${path} parses`, status: !s.checked ? "skipped" : s.ok ? "pass" : "fail", detail: s.checked ? s.error || "syntax OK (parsed, not run)" : s.reason });
+      }
+      patch = { kind: "diff", diff, files: [...changed.keys()], note: "Generated by Anna's LLM and checked here for syntax; not run." };
+    }
+  }
+  const blamesLibrary = out && /node_modules|(edit|patch|fork|modify)\s+(the\s+)?(library|package|dependency)/i.test(out.root_cause + " " + (out.fix_plan || []).join(" "));
+  if (blamesLibrary) checks.push({ name: "Fix targets the caller, not a dependency", status: "fail", detail: "the model suggested changing third-party code; treat it as a lead, not a fix" });
+  const capped = !ev.frames.length ? "low" : files.length ? "medium" : "medium";
+  const llmConf = out && RANK[out.confidence] != null ? out.confidence : "low";
+  return {
+    analyzer: out ? "anna-llm" : "basic",
+    model,
+    root_cause: out
+      ? out.root_cause
+      : `${ev.error || ev.title}`.replace(/\.?$/, "") + (ev.appFrames[0] ? ` in ${ev.appFrames[0].function} (${ev.appFrames[0].file}:${ev.appFrames[0].line})` : "") +
+        ". No built-in analyzer covers this error and Anna's LLM did not answer, so only the parsed alert is shown.",
+    title_check: null,
+    pointer: null,
+    facts: out && Array.isArray(out.evidence_used) && out.evidence_used.length ? out.evidence_used.map(String).slice(0, 10) : facts,
+    checks,
+    confidence: {
+      cause: blamesLibrary ? "low" : lower(llmConf, capped),
+      location: ev.appFrames.length ? "medium" : "low",
+      reasons: [
+        out ? "explained by Anna's LLM from the alert" + (files.length ? " and the attached code" : "") : "no LLM answer: only the parsed alert",
+        ev.frames.length ? "the stack names the failing frames" : "no stack trace: confidence is capped at low",
+      ],
+    },
+    fix_plan: out && Array.isArray(out.fix_plan) ? out.fix_plan.map(String).slice(0, 6) : ["Capture the full stack trace and the failing input, then reproduce locally."],
+    patch,
+    regression_test: null,
+    needs: [ev.frames.length ? null : "a stack trace", files.length ? null : "the code of the failing frames"].filter(Boolean),
+    reproduced: false,
+    reproduced_scope: "nothing was reproduced",
+  };
+}
+
+async function triage(args, { sample, fetchImpl } = {}) {
+  const ev = parseAlert(args.alert || "");
+  const { files, notes } = await collectCode(args, ev, fetchImpl);
+  const result = analyzeRegex(ev, files) || analyzeUndefinedRead(ev, files) || (await analyzeGeneric(ev, files, sample));
+  const verified = result.reproduced ? "high" : "medium";
+  const overall = lower(result.confidence.cause, result.confidence.location, verified);
+  return {
+    title: ev.title,
+    service: ev.service,
+    error_type: ev.errorType,
+    error_message: ev.error,
+    frames: ev.frames,
+    analyzer: result.analyzer,
+    analysis_source: result.analyzer === "anna-llm" ? "anna-llm" : result.analyzer === "basic" ? "basic" : "rules",
+    model: result.model || null,
+    root_cause: result.root_cause,
+    title_check: result.title_check,
+    pointer: result.pointer,
+    facts: result.facts,
+    checks: result.checks,
+    confidence: overall,
+    confidence_detail: result.confidence,
+    fix_plan: result.fix_plan,
+    patch: result.patch,
+    regression_test: result.regression_test,
+    needs: result.needs,
+    code_files: files.map((f) => ({ path: f.path, source: f.source, lines: f.content.split("\n").length })),
+    code_notes: notes,
+    reproduced: result.reproduced,
+    reproduced_scope: result.reproduced_scope,
+    executed_user_code: false,
+    tests_run: false,
+  };
+}
+
+module.exports = { triage, applyEdits };
